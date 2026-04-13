@@ -2,47 +2,63 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>NAV - Prueba de Sonar</title>
+    <title>NAV - Sonar de Steam</title>
     <style>
-        body { background: #0b1116; color: #00ffcc; font-family: 'Courier New', monospace; padding: 20px; }
-        #console { background: #000; border: 1px solid #00ffcc; padding: 15px; height: 300px; overflow-y: auto; color: #00ffcc; }
-        button { background: #00ffcc; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-        .success { color: #00ff00; }
-        .error { color: #ff3333; }
+        body { background: #0b1622; color: #66c0f4; font-family: 'Arial', sans-serif; padding: 20px; }
+        #console { background: #000; border: 1px solid #66c0f4; padding: 15px; height: 350px; overflow-y: auto; color: #a3d071; font-family: monospace; }
+        button { background: #66c0f4; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        button:hover { background: #ffffff; }
+        .success { color: #a3d071; }
+        .error { color: #ff4c4c; }
+        .info { color: #ebebeb; }
     </style>
 </head>
 <body>
-    <h2>Nautilus: Comprobación de Extracción Automática</h2>
-    <p>Presiona el botón para intentar saltar el muro de MAL usando el Proxy AllOrigins.</p>
+    <h2>Nautilus: Intento de Enlace con Steam Wishlist</h2>
+    <p>Objetivo: Extraer datos de la lista de deseados de <b>Ezmakio</b>.</p>
     
-    <button onclick="probarSonar()">LANZAR SONAR</button>
+    <button onclick="probarSteam()">INICIAR ESCANEO DE STEAM</button>
     
-    <h3>Log de Consola:</h3>
-    <div id="console">Esperando órdenes...</div>
+    <h3>Consola de Comunicaciones:</h3>
+    <div id="console">Sistema en espera...</div>
 
     <script>
-        async function probarSonar() {
+        async function probarSteam() {
             const consoleDiv = document.getElementById('console');
-            const malUrl = 'https://myanimelist.net/animelist/Ezmakio/load.json?status=1';
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(malUrl)}`;
+            // Usamos el endpoint oficial de wishlist en formato JSON
+            const steamUrl = 'https://store.steampowered.com/wishlist/id/Ezmakio/wishlistdata/';
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
             
-            consoleDiv.innerHTML += "<br>> Iniciando petición mimetizada...";
+            consoleDiv.innerHTML += "<br>> Contactando repetidor AllOrigins...";
+            consoleDiv.innerHTML += "<br class='info'>> Intentando saltar cortafuegos de Valve...";
 
             try {
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
 
                 if (data.contents) {
+                    // Steam devuelve un objeto donde las llaves son los IDs de los juegos
                     const parsedData = JSON.parse(data.contents);
-                    consoleDiv.innerHTML += `<br class="success">> ¡ÉXITO! Se han detectado ${parsedData.length} series.`;
-                    consoleDiv.innerHTML += `<br class="success">> Primer título detectado: ${parsedData[0].anime_title}`;
-                    console.log("Datos completos:", parsedData);
+                    const gamesCount = Object.keys(parsedData).length;
+
+                    if (gamesCount > 0) {
+                        consoleDiv.innerHTML += `<br class="success">> ¡CONEXIÓN ESTABLECIDA!`;
+                        consoleDiv.innerHTML += `<br class="success">> Juegos detectados en Wishlist: ${gamesCount}`;
+                        
+                        // Mostrar el primer juego encontrado
+                        const firstId = Object.keys(parsedData)[0];
+                        const firstGame = parsedData[firstId];
+                        consoleDiv.innerHTML += `<br class="info">> Primer objetivo identificado: ${firstGame.name}`;
+                        console.log("Datos de Steam:", parsedData);
+                    } else {
+                        consoleDiv.innerHTML += `<br class="error">> ERROR: Se recibió respuesta pero la lista está vacía o es privada.`;
+                    }
                 } else {
-                    consoleDiv.innerHTML += `<br class="error">> ERROR: El proxy respondió pero el contenido está vacío.`;
+                    consoleDiv.innerHTML += `<br class="error">> ERROR: El proxy no pudo obtener contenido de Steam.`;
                 }
             } catch (err) {
-                consoleDiv.innerHTML += `<br class="error">> FALLO CRÍTICO: El muro de MyAnimeList o el Proxy bloquearon la conexión.`;
-                consoleDiv.innerHTML += `<br class="error">> Detalle: ${err.message}`;
+                consoleDiv.innerHTML += `<br class="error">> FALLO DE ENLACE: Steam bloqueó la petición del proxy.`;
+                consoleDiv.innerHTML += `<br class="error">> Detalle técnico: ${err.message}`;
             }
         }
     </script>
