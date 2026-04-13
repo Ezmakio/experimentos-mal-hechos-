@@ -1,66 +1,643 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>NAV - Sonar de Steam</title>
-    <style>
-        body { background: #0b1622; color: #66c0f4; font-family: 'Arial', sans-serif; padding: 20px; }
-        #console { background: #000; border: 1px solid #66c0f4; padding: 15px; height: 350px; overflow-y: auto; color: #a3d071; font-family: monospace; }
-        button { background: #66c0f4; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
-        button:hover { background: #ffffff; }
-        .success { color: #a3d071; }
-        .error { color: #ff4c4c; }
-        .info { color: #ebebeb; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FGO Sprite Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #c9a84c;
+  --gold-dim: #7a5f28;
+  --bg: #0a0a0f;
+  --bg2: #12121a;
+  --bg3: #1a1a25;
+  --border: rgba(201,168,76,0.2);
+  --border-bright: rgba(201,168,76,0.6);
+  --text: #e8e0cc;
+  --text-dim: #7a7060;
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  padding: 0.9rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+header span { font-size: 0.72rem; color: var(--text-dim); }
+
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+
+.s-block {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.s-block h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+.field { margin-bottom: 0.5rem; }
+.field label {
+  display: block;
+  font-size: 0.67rem;
+  color: var(--text-dim);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 0.22rem;
+}
+
+select, input[type=number] {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.82rem;
+  padding: 0.33rem 0.5rem;
+  border-radius: 4px;
+  outline: none;
+  appearance: none;
+}
+select:focus, input[type=number]:focus { border-color: var(--gold-dim); }
+
+.load-btn {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.48rem;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.load-btn:hover { background: rgba(201,168,76,0.1); }
+.load-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+input[type=range] {
+  width: 100%;
+  appearance: none;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+.srow { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
+.srow input[type=range] { flex: 1; width: auto; }
+.sval { font-size: 0.68rem; color: var(--gold); min-width: 40px; text-align: right; flex-shrink: 0; }
+.slabel { font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .07em; margin-top: 8px; display: block; }
+
+/* faces */
+.faces-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.face-thumb {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #000;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.12s;
+}
+.face-thumb:hover { border-color: var(--gold-dim); transform: scale(1.04); }
+.face-thumb.active { border: 2px solid var(--gold); }
+.face-thumb canvas { display: block; width: 100%; height: auto; }
+.no-faces { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+
+/* ── VIEWPORT ── */
+.viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #0d0d1a 0%, #05050b 100%);
+  cursor: grab;
+}
+.viewport:active { cursor: grabbing; }
+.viewport canvas { position: absolute; top: 0; left: 0; }
+
+.hint {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1rem; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.hint.hidden { opacity: 0; }
+.hint-ring {
+  width: 72px; height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.hint-ring svg { opacity: 0.22; }
+.hint p { font-size: 0.74rem; color: var(--text-dim); }
+
+/* ── STATUS ── */
+.statusbar {
+  padding: 0.33rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex; align-items: center; gap: 1rem;
+  font-size: 0.68rem; flex-shrink: 0;
+}
+.sdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-dim); flex-shrink: 0; transition: background 0.3s;
+}
+.sdot.ok  { background: #4caf7d; }
+.sdot.err { background: #e24b4a; }
+.sdot.loading { background: var(--gold); animation: blink .8s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.stext { color: var(--text-dim); flex: 1; }
+.id-badge {
+  font-family: monospace; font-size: 0.66rem; color: var(--gold);
+  background: rgba(201,168,76,0.08); border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 3px;
+}
+
+canvas#hiddenCanvas { display: none; }
+</style>
 </head>
 <body>
-    <h2>Nautilus: Intento de Enlace con Steam Wishlist</h2>
-    <p>Objetivo: Extraer datos de la lista de deseados de <b>Ezmakio</b>.</p>
-    
-    <button onclick="probarSteam()">INICIAR ESCANEO DE STEAM</button>
-    
-    <h3>Consola de Comunicaciones:</h3>
-    <div id="console">Sistema en espera...</div>
 
-    <script>
-        async function probarSteam() {
-            const consoleDiv = document.getElementById('console');
-            // Usamos el endpoint oficial de wishlist en formato JSON
-            const steamUrl = 'https://store.steampowered.com/wishlist/id/Ezmakio/wishlistdata/';
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
-            
-            consoleDiv.innerHTML += "<br>> Contactando repetidor AllOrigins...";
-            consoleDiv.innerHTML += "<br class='info'>> Intentando saltar cortafuegos de Valve...";
+<header>
+  <h1>FGO Sprite Viewer</h1>
+  <span>Atlas Academy · CharaFigure Explorer</span>
+</header>
 
-            try {
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
+<div class="main">
+  <aside class="sidebar">
 
-                if (data.contents) {
-                    // Steam devuelve un objeto donde las llaves son los IDs de los juegos
-                    const parsedData = JSON.parse(data.contents);
-                    const gamesCount = Object.keys(parsedData).length;
+    <div class="s-block">
+      <h2>Servant</h2>
+      <div class="field">
+        <label>Clase (Z)</label>
+        <select id="classZ">
+          <option value="1">1 – Saber</option>
+          <option value="2">2 – Archer</option>
+          <option value="3">3 – Lancer</option>
+          <option value="4">4 – Rider</option>
+          <option value="5">5 – Caster</option>
+          <option value="6">6 – Assassin</option>
+          <option value="7">7 – Berserker</option>
+          <option value="8">8 – Shielder</option>
+          <option value="9">9 – Ruler</option>
+          <option value="10">10 – Alter Ego</option>
+          <option value="11">11 – Avenger</option>
+          <option value="23">23 – Moon Cancer</option>
+          <option value="25">25 – Foreigner</option>
+          <option value="28">28 – Pretender</option>
+          <option value="33">33 – Beast</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Número (#YYY)</label>
+        <input type="number" id="servNum" value="1" min="1" max="999"/>
+      </div>
+      <div class="field">
+        <label>Ascensión (X)</label>
+        <select id="ascension">
+          <option value="0">0 – Base</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+      </div>
+      <button class="load-btn" id="loadBtn">⬤ Cargar Sprite</button>
+    </div>
 
-                    if (gamesCount > 0) {
-                        consoleDiv.innerHTML += `<br class="success">> ¡CONEXIÓN ESTABLECIDA!`;
-                        consoleDiv.innerHTML += `<br class="success">> Juegos detectados en Wishlist: ${gamesCount}`;
-                        
-                        // Mostrar el primer juego encontrado
-                        const firstId = Object.keys(parsedData)[0];
-                        const firstGame = parsedData[firstId];
-                        consoleDiv.innerHTML += `<br class="info">> Primer objetivo identificado: ${firstGame.name}`;
-                        console.log("Datos de Steam:", parsedData);
-                    } else {
-                        consoleDiv.innerHTML += `<br class="error">> ERROR: Se recibió respuesta pero la lista está vacía o es privada.`;
-                    }
-                } else {
-                    consoleDiv.innerHTML += `<br class="error">> ERROR: El proxy no pudo obtener contenido de Steam.`;
-                }
-            } catch (err) {
-                consoleDiv.innerHTML += `<br class="error">> FALLO DE ENLACE: Steam bloqueó la petición del proxy.`;
-                consoleDiv.innerHTML += `<br class="error">> Detalle técnico: ${err.message}`;
-            }
-        }
-    </script>
+    <div class="s-block">
+      <h2>Escala viewport</h2>
+      <div class="srow">
+        <input type="range" id="scaleSlider" min="10" max="250" value="70" step="1"/>
+        <span class="sval" id="scaleOut">70%</span>
+      </div>
+    </div>
+
+    <div class="s-block" id="fineSection" style="display:none;">
+      <h2>Ajuste cara</h2>
+      <span class="slabel" style="margin-top:0;">Vertical</span>
+      <div class="srow">
+        <input type="range" id="fineY" min="-300" max="300" value="0" step="1"/>
+        <span class="sval" id="fineYOut">0px</span>
+      </div>
+      <span class="slabel">Horizontal</span>
+      <div class="srow">
+        <input type="range" id="fineX" min="-300" max="300" value="0" step="1"/>
+        <span class="sval" id="fineXOut">0px</span>
+      </div>
+      <span class="slabel">Tamaño</span>
+      <div class="srow">
+        <input type="range" id="fineSize" min="30" max="200" value="100" step="1"/>
+        <span class="sval" id="fineSizeOut">100%</span>
+      </div>
+    </div>
+
+    <div class="s-block" style="flex:1; border-bottom:none;">
+      <h2>Expresiones</h2>
+      <div class="faces-grid" id="facesList">
+        <p class="no-faces">Carga un servant primero.</p>
+      </div>
+    </div>
+
+  </aside>
+
+  <div class="viewport" id="viewport">
+    <canvas id="mainCanvas"></canvas>
+    <div class="hint" id="hint">
+      <div class="hint-ring">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4l3 3"/>
+        </svg>
+      </div>
+      <p>Selecciona clase · número · ascensión y carga</p>
+    </div>
+  </div>
+</div>
+
+<footer class="statusbar">
+  <div class="sdot" id="sdot"></div>
+  <span class="stext" id="stext">Esperando...</span>
+  <span class="id-badge" id="idBadge" style="display:none"></span>
+</footer>
+
+<canvas id="hiddenCanvas"></canvas>
+
+<script>
+const BASE = 'https://static.atlasacademy.io/NA/CharaFigure/';
+
+const hidden    = document.getElementById('hiddenCanvas');
+const hctx      = hidden.getContext('2d', { willReadFrequently: true });
+const mainC     = document.getElementById('mainCanvas');
+const mctx      = mainC.getContext('2d');
+const viewport  = document.getElementById('viewport');
+const hint      = document.getElementById('hint');
+const sdot      = document.getElementById('sdot');
+const stext     = document.getElementById('stext');
+const idBadge   = document.getElementById('idBadge');
+const facesList = document.getElementById('facesList');
+const fineSection = document.getElementById('fineSection');
+
+const scaleSlider = document.getElementById('scaleSlider');
+const scaleOut    = document.getElementById('scaleOut');
+const fineY       = document.getElementById('fineY');
+const fineYOut    = document.getElementById('fineYOut');
+const fineX       = document.getElementById('fineX');
+const fineXOut    = document.getElementById('fineXOut');
+const fineSize    = document.getElementById('fineSize');
+const fineSizeOut = document.getElementById('fineSizeOut');
+
+let spriteData  = null;
+let activeFace  = -1;
+let scale       = 0.7;
+let adjY = 0, adjX = 0, adjSize = 100;
+let dragging = false, lastX = 0, lastY = 0, offX = 0, offY = 0;
+
+// ── Status ───────────────────────────────────────────────────────────────────
+function setStatus(type, msg) {
+  sdot.className = 'sdot' + (type ? ' ' + type : '');
+  stext.textContent = msg;
+}
+
+// ── Sliders ──────────────────────────────────────────────────────────────────
+scaleSlider.oninput = () => {
+  scale = scaleSlider.value / 100;
+  scaleOut.textContent = scaleSlider.value + '%';
+  if (spriteData) render();
+};
+fineY.oninput = () => {
+  adjY = parseInt(fineY.value);
+  fineYOut.textContent = adjY + 'px';
+  if (spriteData) render();
+};
+fineX.oninput = () => {
+  adjX = parseInt(fineX.value);
+  fineXOut.textContent = adjX + 'px';
+  if (spriteData) render();
+};
+fineSize.oninput = () => {
+  adjSize = parseInt(fineSize.value);
+  fineSizeOut.textContent = adjSize + '%';
+  if (spriteData) render();
+};
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+document.getElementById('loadBtn').onclick = loadSprite;
+document.getElementById('servNum').addEventListener('keydown', e => { if (e.key === 'Enter') loadSprite(); });
+
+async function loadSprite() {
+  const z   = document.getElementById('classZ').value;
+  const num = document.getElementById('servNum').value;
+  const asc = document.getElementById('ascension').value;
+  const id  = String(z) + String(num).padStart(3,'0') + '00' + String(asc);
+
+  document.getElementById('loadBtn').disabled = true;
+  setStatus('loading', `Cargando ${id}...`);
+  idBadge.style.display = 'none';
+  facesList.innerHTML = '<p class="no-faces">Analizando sprite...</p>';
+  spriteData = null;
+  activeFace = -1;
+  resetAdj();
+  fineSection.style.display = 'none';
+
+  try {
+    const url = `${BASE}${id}/${id}_merged.png`;
+    const img = await loadImage(url);
+
+    hidden.width  = img.naturalWidth;
+    hidden.height = img.naturalHeight;
+    hctx.clearRect(0, 0, hidden.width, hidden.height);
+    hctx.drawImage(img, 0, 0);
+
+    const pixels = hctx.getImageData(0, 0, hidden.width, hidden.height);
+    const result = analyzeSprite(pixels, hidden.width, hidden.height);
+    spriteData   = { img, ...result, fullW: hidden.width, fullH: hidden.height };
+
+    offX = 0; offY = 0;
+    buildFaceThumbs(result);
+    render();
+
+    hint.classList.add('hidden');
+    idBadge.textContent    = id;
+    idBadge.style.display  = 'inline';
+    setStatus('ok', `${result.faces.length} expresión(es) · clic en una para aplicarla · arrastra/scroll para navegar`);
+  } catch (err) {
+    setStatus('err', 'No se pudo cargar. Verifica que el ID exista en Atlas Academy NA.');
+    facesList.innerHTML = '<p class="no-faces">Sin datos.</p>';
+  }
+
+  document.getElementById('loadBtn').disabled = false;
+}
+
+function loadImage(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => res(img);
+    img.onerror = () => rej(new Error('load error'));
+    img.src = url;
+  });
+}
+
+function resetAdj() {
+  adjY = 0; adjX = 0; adjSize = 100;
+  fineY.value = 0;    fineYOut.textContent = '0px';
+  fineX.value = 0;    fineXOut.textContent = '0px';
+  fineSize.value = 100; fineSizeOut.textContent = '100%';
+}
+
+// ── Pixel helpers ────────────────────────────────────────────────────────────
+function isRowBlack(d, W, y, thr=18) {
+  for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    if (d[i+3] > 30 && (d[i] > thr || d[i+1] > thr || d[i+2] > thr)) return false;
+  }
+  return true;
+}
+
+function isColBlack(d, W, x, y0, y1, thr=18) {
+  for (let y = y0; y < y1; y++) {
+    const i = (y * W + x) * 4;
+    if (d[i+3] > 30 && (d[i] > thr || d[i+1] > thr || d[i+2] > thr)) return false;
+  }
+  return true;
+}
+
+function hasContent(d, W, x, y, w, h) {
+  let n = 0;
+  for (let py = y; py < y+h; py += 4)
+    for (let px = x; px < x+w; px += 4) {
+      const i = (py*W+px)*4;
+      if (d[i+3]>30 && (d[i]>20||d[i+1]>20||d[i+2]>20) && ++n>8) return true;
+    }
+  return false;
+}
+
+// ── Sprite analysis ──────────────────────────────────────────────────────────
+function analyzeSprite(pixels, W, H) {
+  const d = pixels.data;
+
+  // 1. Find body/face separator = longest consecutive all-black row run
+  let bestStart=0, bestLen=0, run=0, runStart=0;
+  for (let y=0; y<H; y++) {
+    if (isRowBlack(d,W,y)) {
+      if (run===0) runStart=y;
+      if (++run>bestLen) { bestLen=run; bestStart=runStart; }
+    } else run=0;
+  }
+  const bodyEnd = bestLen>=3 ? bestStart : Math.floor(H*0.62);
+
+  // 2. Face row bands
+  const rowB = [bodyEnd];
+  run=0;
+  for (let y=bodyEnd+1; y<H; y++) {
+    if (isRowBlack(d,W,y)) { if(++run===3) rowB.push(y-2); }
+    else run=0;
+  }
+  rowB.push(H);
+
+  // 3. Face column bands
+  const colB = [0];
+  for (let x=1; x<W-1; x++) {
+    if (isColBlack(d,W,x,bodyEnd,H)) {
+      const prev = colB[colB.length-1];
+      if (x-prev>30) colB.push(x);
+    }
+  }
+  colB.push(W);
+
+  // 4. Face rects
+  const faces = [];
+  for (let r=0; r<rowB.length-1; r++) {
+    const fy=rowB[r], fh=rowB[r+1]-fy;
+    if (fh<30) continue;
+    for (let c=0; c<colB.length-1; c++) {
+      const fx=colB[c], fw=colB[c+1]-fx;
+      if (fw<30) continue;
+      if (hasContent(d,W,fx,fy,fw,fh)) faces.push({x:fx,y:fy,w:fw,h:fh});
+    }
+  }
+
+  // 5. Head anchor: bounding box of top 55% of body
+  const anchor = detectHeadAnchor(d, W, bodyEnd);
+
+  return { bodyEnd, faces, anchor };
+}
+
+function detectHeadAnchor(d, W, bodyEnd) {
+  const scanH = Math.floor(bodyEnd * 0.55);
+  let minX=W, maxX=0, minY=bodyEnd, maxY=0;
+  for (let y=0; y<scanH; y++)
+    for (let x=0; x<W; x++) {
+      const i=(y*W+x)*4;
+      if (d[i+3]>30 && (d[i]>20||d[i+1]>20||d[i+2]>20)) {
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+    }
+  if (minX>=maxX||minY>=maxY) return null;
+
+  const charW = maxX-minX;
+  const charH = maxY-minY;
+  // Head = top 40% of character height
+  return {
+    x: minX, y: minY,
+    w: charW, h: Math.floor(charH*0.40),
+    cx: Math.floor((minX+maxX)/2)
+  };
+}
+
+// ── Face thumbnails ──────────────────────────────────────────────────────────
+function buildFaceThumbs(result) {
+  facesList.innerHTML = '';
+  if (!result.faces.length) {
+    facesList.innerHTML = '<p class="no-faces">No se detectaron expresiones.</p>';
+    return;
+  }
+  result.faces.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'face-thumb';
+    const tc = document.createElement('canvas');
+    const sc = Math.min(1, 95/f.w);
+    tc.width  = Math.round(f.w*sc);
+    tc.height = Math.round(f.h*sc);
+    tc.getContext('2d').drawImage(hidden, f.x,f.y,f.w,f.h, 0,0,tc.width,tc.height);
+    div.appendChild(tc);
+    div.onclick = () => {
+      const same = activeFace===i;
+      activeFace = same ? -1 : i;
+      if (!same) resetAdj();
+      document.querySelectorAll('.face-thumb').forEach((el,j)=>el.classList.toggle('active', j===activeFace));
+      fineSection.style.display = activeFace>=0 ? 'block' : 'none';
+      render();
+    };
+    facesList.appendChild(div);
+  });
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  if (!spriteData) return;
+  const { img, bodyEnd, faces, anchor, fullW } = spriteData;
+
+  const vw = viewport.clientWidth  || 700;
+  const vh = viewport.clientHeight || 500;
+  mainC.width  = vw;
+  mainC.height = vh;
+  mctx.clearRect(0,0,vw,vh);
+
+  // Draw body only (crop at bodyEnd — no face sheet visible)
+  const dw = Math.round(fullW * scale);
+  const dh = Math.round(bodyEnd * scale);
+  const cx = (vw-dw)/2 + offX;
+  const cy = (vh-dh)/2 + offY;
+  mctx.drawImage(img, 0, 0, fullW, bodyEnd, cx, cy, dw, dh);
+
+  // Overlay selected face onto detected head position
+  if (activeFace>=0 && faces[activeFace] && anchor) {
+    const f  = faces[activeFace];
+    const ha = anchor;
+
+    // Scale face to match head width, then apply user size tweak
+    const baseRatio = ha.w / f.w;
+    const ratio     = baseRatio * (adjSize/100);
+
+    const fw = Math.round(f.w * ratio * scale);
+    const fh = Math.round(f.h * ratio * scale);
+
+    // Center on head center X, top-align to head top Y — both adjustable
+    const destX = cx + (ha.cx + adjX) * scale - fw/2;
+    const destY = cy + (ha.y  + adjY) * scale;
+
+    mctx.drawImage(hidden, f.x, f.y, f.w, f.h, destX, destY, fw, fh);
+  }
+}
+
+// ── Drag ─────────────────────────────────────────────────────────────────────
+viewport.addEventListener('mousedown', e => { dragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  offX+=e.clientX-lastX; offY+=e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY;
+  if (spriteData) render();
+});
+window.addEventListener('mouseup', ()=>{ dragging=false; });
+
+viewport.addEventListener('touchstart', e=>{
+  const t=e.touches[0]; dragging=true; lastX=t.clientX; lastY=t.clientY;
+},{passive:true});
+window.addEventListener('touchmove', e=>{
+  if(!dragging) return;
+  const t=e.touches[0];
+  offX+=t.clientX-lastX; offY+=t.clientY-lastY;
+  lastX=t.clientX; lastY=t.clientY;
+  if(spriteData) render();
+},{passive:true});
+window.addEventListener('touchend',()=>{ dragging=false; });
+
+// Scroll to zoom
+viewport.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const v=Math.min(250,Math.max(10,parseInt(scaleSlider.value)+(e.deltaY>0?-5:5)));
+  scaleSlider.value=v; scale=v/100; scaleOut.textContent=v+'%';
+  if(spriteData) render();
+},{passive:false});
+
+window.addEventListener('resize',()=>{ if(spriteData) render(); });
+</script>
 </body>
 </html>
