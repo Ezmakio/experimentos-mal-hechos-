@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>NAV - Prueba de Sonar</title>
+    <style>
+        body { background: #0b1116; color: #00ffcc; font-family: 'Courier New', monospace; padding: 20px; }
+        #console { background: #000; border: 1px solid #00ffcc; padding: 15px; height: 300px; overflow-y: auto; color: #00ffcc; }
+        button { background: #00ffcc; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .success { color: #00ff00; }
+        .error { color: #ff3333; }
+    </style>
+</head>
+<body>
+    <h2>Nautilus: Comprobación de Extracción Automática</h2>
+    <p>Presiona el botón para intentar saltar el muro de MAL usando el Proxy AllOrigins.</p>
+    
+    <button onclick="probarSonar()">LANZAR SONAR</button>
+    
+    <h3>Log de Consola:</h3>
+    <div id="console">Esperando órdenes...</div>
+
+    <script>
+        async function probarSonar() {
+            const consoleDiv = document.getElementById('console');
+            const malUrl = 'https://myanimelist.net/animelist/Ezmakio/load.json?status=1';
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(malUrl)}`;
+            
+            consoleDiv.innerHTML += "<br>> Iniciando petición mimetizada...";
+
+            try {
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (data.contents) {
+                    const parsedData = JSON.parse(data.contents);
+                    consoleDiv.innerHTML += `<br class="success">> ¡ÉXITO! Se han detectado ${parsedData.length} series.`;
+                    consoleDiv.innerHTML += `<br class="success">> Primer título detectado: ${parsedData[0].anime_title}`;
+                    console.log("Datos completos:", parsedData);
+                } else {
+                    consoleDiv.innerHTML += `<br class="error">> ERROR: El proxy respondió pero el contenido está vacío.`;
+                }
+            } catch (err) {
+                consoleDiv.innerHTML += `<br class="error">> FALLO CRÍTICO: El muro de MyAnimeList o el Proxy bloquearon la conexión.`;
+                consoleDiv.innerHTML += `<br class="error">> Detalle: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
